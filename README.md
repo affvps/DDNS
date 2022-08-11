@@ -4,22 +4,8 @@
 > 代理模式,支持自动创建域名记录。
 
 [![PyPI](https://img.shields.io/pypi/v/ddns.svg?label=DDNS&style=social)](https://pypi.org/project/ddns/)
-[![Build Status](https://travis-ci.com/NewFuture/DDNS.svg?branch=master)](https://travis-ci.com/NewFuture/DDNS)
-[![Build Status](https://dev.azure.com/NewFuture-CI/ddns-ci/_apis/build/status/NewFuture.DDNS?branchName=master)](https://dev.azure.com/NewFuture-CI/ddns-ci/_build/latest?definitionId=2&branchName=master)
-[![latest deploy](https://vsrm.dev.azure.com/NewFuture-CI/_apis/public/Release/badge/2ab09aad-c4b4-4c57-ab1b-2fb92c485664/1/1)](https://github.com/NewFuture/DDNS/releases/latest)
-
-<details>
-
-<summary markdown="span">Build Details
-</summary>
-
-- Linux Python (2 和 3): [![Travis build](https://img.shields.io/travis/com/NewFuture/DDNS/master.svg?label=python2%2Cpython3&logo=ubuntu&logoColor=white)](https://travis-ci.com/NewFuture/DDNS)
-- Windows Python3.7: [![Build Status](https://dev.azure.com/NewFuture-CI/ddns-ci/_apis/build/status/NewFuture.DDNS?branchName=master&jobName=Windows&configuration=Python37)](https://dev.azure.com/NewFuture-CI/ddns-ci/_build/latest?definitionId=2&branchName=master)
-- Windows Python2.7: [![Build Status](https://dev.azure.com/NewFuture-CI/ddns-ci/_apis/build/status/NewFuture.DDNS?branchName=master&jobName=Windows&configuration=Python27)](https://dev.azure.com/NewFuture-CI/ddns-ci/_build/latest?definitionId=2&branchName=master)
-- Mac OSX Python3.7: [![Build Status](https://dev.azure.com/NewFuture-CI/ddns-ci/_apis/build/status/NewFuture.DDNS?branchName=master&jobName=MacOS&configuration=Python37)](https://dev.azure.com/NewFuture-CI/ddns-ci/_build/latest?definitionId=2&branchName=master)
-- Mac OSX Python2.7: [![Build Status](https://dev.azure.com/NewFuture-CI/ddns-ci/_apis/build/status/NewFuture.DDNS?branchName=master&jobName=MacOS&configuration=Python27)](https://dev.azure.com/NewFuture-CI/ddns-ci/_build/latest?definitionId=2&branchName=master)
-
-</details>
+[![Build Status](https://github.com/NewFuture/DDNS/actions/workflows/build.yml/badge.svg?event=push)](https://github.com/NewFuture/DDNS/actions/workflows/build.yml)
+[![Publish Status](https://github.com/NewFuture/DDNS/actions/workflows/publish.yml/badge.svg)](https://github.com/NewFuture/DDNS/releases/latest)
 
 ---
 
@@ -74,14 +60,31 @@
   1. clone 或者[下载此仓库](https://github.com/NewFuture/DDNS/archive/master.zip)并解压
   2. 运行./run.py (widnows 双击`run.bat`或者运行`python run.py`)
 - #### Docker(需要安装 Docker)
-  `docker run -d -v /path/to/config.json:/config.json --network host newfuture/ddns`
+  - 使用环境变量：
+    ```
+    docker run -d \
+      -e DDNS_DNS=dnspod \
+      -e DDNS_ID=12345 \
+      -e DDNS_TOKEN=mytokenkey \
+      -e DDNS_IPV4=ddns.newfuture.cc \
+      -e DDNS_IPV6=ddns.newfuture.cc \
+      --network host \
+      newfuture/ddns
+    ```
+  - 使用配置文件：
+    ```
+    docker run -d \
+      -v /path/to/config.json:/config.json \
+      --network host \
+      newfuture/ddns
+    ```
 
 ### ② 快速配置
 
 1. 申请 api `token`,填写到对应的`id`和`token`字段:
 
    - [DNSPOD(国内版)创建 token](https://support.dnspod.cn/Kb/showarticle/tsid/227/)
-   - [阿里云 accesskey](https://help.aliyun.com/document_detail/28637.html)
+   - [阿里云 accesskey](https://help.aliyun.com/document_detail/87745.htm)
    - [DNS.COM API Key/Secret](https://www.dns.com/member/apiSet)
    - [DNSPOD(国际版)](https://www.dnspod.com/docs/info.html#get-the-user-token)
    - [CloudFlare API Key](https://support.cloudflare.com/hc/en-us/articles/200167836-Where-do-I-find-my-Cloudflare-API-key-) (除了`email + API KEY`,也可使用`Token`需要列出 Zone 权限)
@@ -92,6 +95,12 @@
 2. 修改配置文件,`ipv4`和`ipv6`字段，为待更新的域名,详细参照配置说明
 
 ## 详细配置
+
+所有字段可通过三种方式进行配置
+
+1. 命令行参数 `ddns --key=value` (`ddns -h` 查看详情)，优先级最高
+2. JSON配置文件(值为null认为是有效值，会覆盖环境变量的设置，如果没有对应的key则会尝试试用环境变量)
+3. 环境变量DDNS_前缀加上key 全大写或者全小写 (`${ddns_key}` 或 `${DDNS_KEY}`)
 
 <details open>
 
@@ -129,7 +138,6 @@ python run.py -c /path/to/config.json
 - 数字(`0`,`1`,`2`,`3`等): 第 i 个网卡 ip
 - 字符串`"default"`(或者无此项): 系统访问外网默认 IP
 - 字符串`"public"`: 使用公网 ip(使用公网 API 查询,url 的简化模式)
-- 字符串`"interface"`: 使用指定网卡 ip(如:`"interface:eno1"`)
 - 字符串`"url:xxx"`: 打开 URL `xxx`(如:`"url:http://ip.sb"`),从返回的数据提取 IP 地址
 - 字符串`"regex:xxx"` 正则表达(如`"regex:192.*"`): 提取`ifconfig`/`ipconfig`中与之匹配的首个 IP 地址,**注意 json 转义**(`\`要写成`\\`)
   - `"192.*"`表示 192 开头的所有 ip
@@ -180,15 +188,29 @@ python run.py -c /path/to/config.json
 <summary markdown="span">可以通过脚本设置定时任务(默认每5分钟检查一次ip,自动更新)
 </summary>
 
-#### windows
+#### Windows
 
 - [推荐]以系统身份运行,右键"以管理员身份运行"`task.bat`(或者在管理员命令行中运行)
 - 以当前用户身份运行定时任务,双击或者运行`task.bat` (执行时会闪黑框)
 
-#### linux
+#### Linux
 
-运行 `sudo ./task.sh`
+- 使用init.d和crontab:
+`sudo ./task.sh`
+- 使用systemd:
+    ```bash
+    安装:
+    sudo ./systemd.sh install
+    卸载:
+    sudo ./systemd.sh uninstall
+    ```
+  该脚本安装的文件符合 [Filesystem Hierarchy Standard (FHS)](https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard)：
+  可执行文件所在目录为 `/usr/share/DDNS`
+  配置文件所在目录为 `/etc/DDNS`
 
+#### Docker
+
+Docker镜像在无额外参数的情况下，已默认启用每5分钟执行一次的定时任务
 </details>
 
 ## FAQ

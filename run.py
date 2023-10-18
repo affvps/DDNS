@@ -6,7 +6,7 @@ DDNS
 @modified: rufengsuixing
 """
 from __future__ import print_function
-from time import ctime
+from time import ctime, asctime
 from os import path, environ, name as os_name
 from tempfile import gettempdir
 from logging import DEBUG, basicConfig, info, warning, error, debug
@@ -33,8 +33,6 @@ if getattr(sys, 'frozen', False):
     # https://github.com/pyinstaller/pyinstaller/wiki/Recipe-OpenSSL-Certificate
     environ['SSL_CERT_FILE'] = path.join(
         getattr(sys, '_MEIPASS'), 'lib', 'cert.pem')
-
-CACHE_FILE = path.join(gettempdir(), 'ddns.cache')
 
 
 def get_ip(ip_type, index="default"):
@@ -71,12 +69,12 @@ def get_ip(ip_type, index="default"):
 def change_dns_record(dns, proxy_list, **kw):
     for proxy in proxy_list:
         if not proxy or (proxy.upper() in ['DIRECT', 'NONE']):
-            dns.PROXY = None
+            dns.Config.PROXY = None
         else:
-            dns.PROXY = proxy
+            dns.Config.PROXY = proxy
         record_type, domain = kw['record_type'], kw['domain']
-        print('\n%s(%s) ==> %s [via %s]' %
-              (domain, record_type, kw['ip'], proxy))
+        print('\n%s %s(%s) ==> %s [via %s]' %
+              (asctime(), domain, record_type, kw['ip'], proxy))
         try:
             return dns.update_record(domain, kw['ip'], record_type=record_type)
         except Exception as e:
@@ -139,13 +137,20 @@ def main():
     proxy_list = proxy if isinstance(
         proxy, list) else proxy.strip('; ').replace(',', ';').split(';')
 
-    cache = get_config('cache', True) and Cache(CACHE_FILE)
+    cache_config = get_config('cache', True)
+    if cache_config is False:
+        cache = cache_config
+    elif cache_config is True:
+        cache = Cache(path.join(gettempdir(), 'ddns.cache'))
+    else:
+        cache = Cache(cache_config)
+
     if cache is False:
         info("Cache is disabled!")
     elif get_config("config_modified_time") is None or get_config("config_modified_time") >= cache.time:
         warning("Cache file is out of dated.")
         cache.clear()
-    elif not cache:
+    else:
         debug("Cache is empty.")
     update_ip('4', cache, dns, proxy_list)
     update_ip('6', cache, dns, proxy_list)
